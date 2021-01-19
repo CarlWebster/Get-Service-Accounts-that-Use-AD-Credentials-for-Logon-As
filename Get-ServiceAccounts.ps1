@@ -11,13 +11,22 @@
 	Builds a list of computer names, Service names, service display names, and service start 
 	names.
 	
-	Creates two text files, by default, in the folder where the script is run.
+	Creates two text files and one CSV file, by default, in the folder where the script 
+	is run.
 	
 	Optionally, can specify the output folder.
 	
 	The script has been tested with PowerShell versions 3, 4, 5, and 5.1.
 	The script has been tested with Microsoft Windows Server 2008 R2 (with PowerShell V3), 
-	2012, 2012 R2, 2016, 2019 and Windows 10.
+	2012, 2012 R2, 2016, 2019, and Windows 10.
+.PARAMETER Name
+	Specifies the Name of the target computer.
+	
+	Accepts input from the pipeline.
+.PARAMETER UseDcom
+	The script, by default, uses TCP Port 139 for testing if a computer is online and 
+	available.
+	Use the UseDcom switch to have the script use TCP Port 5985 to use WinRM 2.0.
 .PARAMETER Dev
 	Clears errors at the beginning of the script.
 	Outputs all errors to a text file at the end of the script.
@@ -30,10 +39,6 @@
 	Specifies the optional output folder to save the output reports. 
 .PARAMETER Log
 	Generates a log file for troubleshooting.
-.PARAMETER Name
-	Specifies the Name of the target computer.
-	
-	Accepts input from the pipeline.
 .PARAMETER ScriptInfo
 	Outputs information about the script to a text file.
 	The text file is placed in the same folder from where the script is run.
@@ -55,23 +60,33 @@
 	Specifies the username for the To email address.
 	If SmtpServer is used, this is a required parameter.
 .EXAMPLE
-	Get-ADComputer -Filter * | .\Get-ServiceAccounts.ps1
+	Get-ADComputer -Filter * | Select Name | Sort Name | .\Get-ServiceAccounts.ps1
 
 .EXAMPLE
-	Get-AdComputer -filter {OperatingSystem -like "*window*"} | 
+	$Names = Get-ADComputer -Filter * | Select Name | Sort Name
+	.\Get-ServiceAccounts.ps1 -Name $Names
+.EXAMPLE
+	Get-ADComputer -Filter * | Select Name | Sort Name | .\Get-ServiceAccounts.ps1 
+	-UseDcom
+	
+	Use TCP port 5985 instead of TCP port 139.
+.EXAMPLE
+	$Names = Get-ADComputer -Filter * | Select Name | Sort Name
+	.\Get-ServiceAccounts.ps1 -Name $Names -UseDcom
+
+	Use TCP port 5985 instead of TCP port 139.
+.EXAMPLE
+	Get-AdComputer -filter {OperatingSystem -like "*window*"} | Sort Name | 
 	.\Get-ServiceAccounts.ps1 -Folder \\FileServer\ShareName
 	
 	Output file will be saved in the path \\FileServer\ShareName
 .EXAMPLE
-	Get-AdComputer -filter {OperatingSystem -like "*window*"} 
-	-SearchBase "ou=SQLServers,dc=domain,dc=tld" 
-	-SearchScope Subtree 
-	-properties Name -EA 0 | 
-	Sort Name | 
-	.\Get-ServiceAccounts.ps1
+	Get-AdComputer -filter {OperatingSystem -like "*window*"} -SearchBase 
+	"ou=SQLServers,dc=domain,dc=tld" -SearchScope Subtree -properties Name -EA 0 | Sort 
+	Name | .\Get-ServiceAccounts.ps1
 .EXAMPLE
-	Get-AdComputer -filter {OperatingSystem -like "*window*"} 
-	-properties Name -EA 0 | Sort Name | .\Get-ServiceAccounts.ps1
+	Get-AdComputer -filter {OperatingSystem -like "*window*"} -properties Name -EA 
+	0 | Sort Name | .\Get-ServiceAccounts.ps1
 	
 	Processes only computers with "window" in the OperatingSystem property
 .EXAMPLE
@@ -96,33 +111,29 @@
 	LABSQL1
 
 .EXAMPLE
-	Get-ADComputer -Filter * | .\Get-ServiceAccounts.ps1 
-	-SmtpServer mail.domain.tld
-	-From XDAdmin@domain.tld 
-	-To ITGroup@domain.tld	
+	Get-ADComputer -Filter * | .\Get-ServiceAccounts.ps1 -SmtpServer 
+	mail.domain.tld -From XDAdmin@domain.tld -To ITGroup@domain.tld	
 
-	The script will use the email server mail.domain.tld, sending from XDAdmin@domain.tld, 
+	The script uses the email server mail.domain.tld, sending from XDAdmin@domain.tld, 
 	sending to ITGroup@domain.tld.
 
-	The script will use the default SMTP port 25 and will not use SSL.
+	The script uses the default SMTP port 25 and does not use SSL.
 
-	If the current user's credentials are not valid to send email, 
-	the user will be prompted to enter valid credentials.
+	If the current user's credentials are not valid to send an email, the script prompts 
+	the user to enter valid credentials.
 .EXAMPLE
-	Get-ADComputer -Filter * | .\Get-ServiceAccounts.ps1
-	-SmtpServer mailrelay.domain.tld
-	-From Anonymous@domain.tld 
-	-To ITGroup@domain.tld	
+	Get-ADComputer -Filter * | .\Get-ServiceAccounts.ps1 -SmtpServer 
+	mailrelay.domain.tld -From Anonymous@domain.tld -To ITGroup@domain.tld	
 
 	***SENDING UNAUTHENTICATED EMAIL***
 
-	The script will use the email server mailrelay.domain.tld, sending from 
+	The script uses the email server mailrelay.domain.tld, sending from 
 	anonymous@domain.tld, sending to ITGroup@domain.tld.
 
 	To send unauthenticated email using an email relay server requires the From email account 
-	to use the name Anonymous.
+	use the name Anonymous.
 
-	The script will use the default SMTP port 25 and will not use SSL.
+	The script uses the default SMTP port 25 and does not use SSL.
 	
 	***GMAIL/G SUITE SMTP RELAY***
 	https://support.google.com/a/answer/2956491?hl=en
@@ -132,14 +143,12 @@
 	the "Less secure app access" option on your account.
 	***GMAIL/G SUITE SMTP RELAY***
 
-	The script will generate an anonymous secure password for the anonymous@domain.tld 
+	The script generates an anonymous, secure password for the anonymous@domain.tld 
 	account.
 .EXAMPLE
-	Get-ADComputer -Filter * | .\Get-ServiceAccounts.ps1
-	-SmtpServer labaddomain-com.mail.protection.outlook.com
-	-UseSSL
-	-From SomeEmailAddress@labaddomain.com 
-	-To ITGroupDL@labaddomain.com	
+	Get-ADComputer -Filter * | .\Get-ServiceAccounts.ps1 -SmtpServer 
+	labaddomain-com.mail.protection.outlook.com -UseSSL -From 
+	SomeEmailAddress@labaddomain.com -To ITGroupDL@labaddomain.com	
 
 	***OFFICE 365 Example***
 
@@ -149,50 +158,44 @@
 	
 	***OFFICE 365 Example***
 
-	The script will use the email server labaddomain-com.mail.protection.outlook.com, 
+	The script uses the email server labaddomain-com.mail.protection.outlook.com, 
 	sending from SomeEmailAddress@labaddomain.com, sending to ITGroupDL@labaddomain.com.
 
-	The script will use the default SMTP port 25 and will use SSL.
+	The script uses the default SMTP port 25 and SSL.
 .EXAMPLE
-	Get-ADComputer -Filter * | .\Get-ServiceAccounts.ps1
-	-SmtpServer smtp.office365.com 
-	-SmtpPort 587
-	-UseSSL 
-	-From Webster@CarlWebster.com 
-	-To ITGroup@CarlWebster.com	
+	Get-ADComputer -Filter * | .\Get-ServiceAccounts.ps1 -SmtpServer 
+	smtp.office365.com -SmtpPort 587 -UseSSL -From Webster@CarlWebster.com -To 
+	ITGroup@CarlWebster.com	
 
-	The script will use the email server smtp.office365.com on port 587 using SSL, 
+	The script uses the email server smtp.office365.com on port 587 using SSL, 
 	sending from webster@carlwebster.com, sending to ITGroup@carlwebster.com.
 
-	If the current user's credentials are not valid to send email, 
-	the user will be prompted to enter valid credentials.
+	If the current user's credentials are not valid to send an email, the script prompts 
+	the user to enter valid credentials.
 .EXAMPLE
-	Get-ADComputer -Filter * | .\Get-ServiceAccounts.ps1
-	-SmtpServer smtp.gmail.com 
-	-SmtpPort 587
-	-UseSSL 
-	-From Webster@CarlWebster.com 
-	-To ITGroup@CarlWebster.com	
+	Get-ADComputer -Filter * | .\Get-ServiceAccounts.ps1 -SmtpServer smtp.gmail.com 
+	-SmtpPort 587 -UseSSL -From Webster@CarlWebster.com -To ITGroup@CarlWebster.com	
 
 	*** NOTE ***
 	To send email using a Gmail or g-suite account, you may have to turn ON
 	the "Less secure app access" option on your account.
 	*** NOTE ***
 	
-	The script will use the email server smtp.gmail.com on port 587 using SSL, 
+	The script uses the email server smtp.gmail.com on port 587 using SSL, 
 	sending from webster@gmail.com, sending to ITGroup@carlwebster.com.
 
-	If the current user's credentials are not valid to send email, 
-	the user will be prompted to enter valid credentials.
+	If the current user's credentials are not valid to send an email, the script prompts 
+	the user to enter valid credentials.
 .INPUTS
 	Accepts pipeline input with the property Name or a list of computer names.
 .OUTPUTS
-	No objects are output from this script.  This script creates two texts files.
+	No objects are output from this script.  This script creates two text files and a CSV
+	file.
 .NOTES
 	NAME: Get-ServiceAccounts.ps1
-	VERSION: 1.10
+	VERSION: 1.20
 	AUTHOR: Carl Webster and Michael B. Smith
-	LASTEDIT: April 29, 2020
+	LASTEDIT: January 19, 2021
 #>
 
 
@@ -209,6 +212,18 @@
 #Created on October 31, 2019
 #Version 1.00 released to the community on 19-Dec-2019
 #
+#Version 1.20 19-Jan-2021
+#	Added creating a CSV file
+#		Changed to creating an object instead of text
+#	Added switch UseDcom to change from using TCP port 139 for testing connections to port 5985 (WinRM 2.0)
+#		Updated messages to reflect that change
+#	Added the domain name to all output files and the script title
+#	Change to using Invoke-Command to gather the service information on remote computers when -UseDcom is used
+#		If testing the computer running the script, don't use Invoke-Command
+#	Reordered the parameters in an order recommended by Guy Leech
+#	Updated help text
+#	Updated ReadMe file
+#
 #Version 1.10 29-Apr-2020
 #	Add email capability to match other scripts
 #		Update Help Text with examples
@@ -218,7 +233,7 @@
 #	Cleanup screen output
 #	Enable Verbose output
 #	If the tested computer is online and no service with domain creds was found, write that to the output file
-#	Make sure that Filename2 (ComputersWithDomainServiceAccountsErrors.txt) is new for each run
+#	Make sure that filename3 (ComputersWithDomainServiceAccountsErrors.txt) is new for each run
 #	Reformatted the terminating Write-Error messages to make them more visible and readable in the console
 #endregion
 
@@ -226,6 +241,16 @@
 [CmdletBinding(SupportsShouldProcess = $False, ConfirmImpact = "None", DefaultParameterSetName = "") ]
 
 Param(
+	[parameter(
+		Mandatory                       = $True,
+		ValueFromPipeline               = $True,
+		ValueFromPipelineByPropertyName = $True,
+		Position                        = 0)] 
+	[string[]]$Name,
+	
+	[parameter(Mandatory=$False)] 
+	[Switch]$UseDcom=$False,
+	
 	[parameter(Mandatory=$False)] 
 	[Switch]$Dev=$False,
 	
@@ -234,13 +259,6 @@ Param(
 	
 	[parameter(Mandatory=$False)] 
 	[Switch]$Log=$False,
-	
-	[parameter(
-		Mandatory                       = $True,
-		ValueFromPipeline               = $True,
-		ValueFromPipelineByPropertyName = $True,
-		Position                        = 0)] 
-	[string[]]$Name,
 	
 	[parameter(Mandatory=$False)] 
 	[Alias("SI")]
@@ -403,7 +421,7 @@ Begin
 	If($Log) 
 	{
 		#start transcript logging
-		$Script:LogPath = "$($Script:pwdpath)\ComputersWithDomainServiceAccountsScriptTranscript_$(Get-Date -f yyyy-MM-dd_HHmm).txt"
+		$Script:LogPath = "$($Script:pwdpath)\ComputersWithDomainServiceAccountsScriptTranscript_ForDomain_$($Domain)_$(Get-Date -f yyyy-MM-dd_HHmm).txt"
 		
 		try 
 		{
@@ -421,31 +439,41 @@ Begin
 	If($Dev)
 	{
 		$Error.Clear()
-		$Script:DevErrorFile = "$($Script:pwdpath)\ComputersWithDomainServiceAccountsScriptErrors_$(Get-Date -f yyyy-MM-dd_HHmm).txt"
+		$Script:DevErrorFile = "$($Script:pwdpath)\ComputersWithDomainServiceAccountsScriptErrors_ForDomain_$($Domain)_$(Get-Date -f yyyy-MM-dd_HHmm).txt"
 	}
 
-    [string]$Script:FileName1 = "$($Script:pwdpath)\ComputersWithDomainServiceAccounts.txt"
-    [string]$Script:FileName2 = "$($Script:pwdpath)\ComputersWithDomainServiceAccountsErrors.txt"
-	[string]$Script:Title = "Computers with Domain Service Accounts"
+	$Domain = $Env:UserDNSDomain
+    [string]$Script:FileName1 = "$($Script:pwdpath)\ComputersWithDomainServiceAccounts_ForDomain_$($Domain).txt"
+    [string]$Script:FileName2 = "$($Script:pwdpath)\ComputersWithDomainServiceAccounts_ForDomain_$($Domain).csv"
+    [string]$Script:filename3 = "$($Script:pwdpath)\ComputersWithDomainServiceAccountsErrors_ForDomain_$($Domain).txt"
+	[string]$Script:Title = "Computers with Domain Service Accounts For Domain $($Domain)"
 	[string]$Script:RunningOS = (Get-WmiObject -class Win32_OperatingSystem -EA 0).Caption
 
     $startTime = Get-Date
 
 	#make sure the error file is new
-	Out-File -FilePath $Filename2 -InputObject "" -EA 0 4>$Null
+	Out-File -FilePath $Script:filename3 -InputObject "" -EA 0 4>$Null
+
+	$TCPPort = 139
+	If($UseDcom)
+	{
+		$TCPPort = 5985
+	}
 
 	Write-Verbose "$(Get-Date): "
 	Write-Verbose "$(Get-Date): "
 	Write-Verbose "$(Get-Date): Dev                : $($Dev)"
 	Write-Verbose "$(Get-Date): Filename1          : $($Script:filename1)"
 	Write-Verbose "$(Get-Date): Filename2          : $($Script:filename2)"
+	Write-Verbose "$(Get-Date): Filename3          : $($Script:filename3)"
 	Write-Verbose "$(Get-Date): Folder             : $($Script:pwdpath)"
-	Write-Verbose "$(Get-Date): From               : $($From)"
 	Write-Verbose "$(Get-Date): Log                : $($Log)"
 	Write-Verbose "$(Get-Date): ScriptInfo         : $($ScriptInfo)"
+	Write-Verbose "$(Get-Date): TCP Port           : $($TCPPort)"
+	Write-Verbose "$(Get-Date): Title              : $($Script:Title)"
 	Write-Verbose "$(Get-Date): Smtp Port          : $($SmtpPort)"
 	Write-Verbose "$(Get-Date): Smtp Server        : $($SmtpServer)"
-	Write-Verbose "$(Get-Date): Title              : $($Script:Title)"
+	Write-Verbose "$(Get-Date): From               : $($From)"
 	Write-Verbose "$(Get-Date): To                 : $($To)"
 	Write-Verbose "$(Get-Date): Use SSL            : $($UseSSL)"
 	Write-Verbose "$(Get-Date): "
@@ -591,39 +619,113 @@ $Script:Title is attached.
 
 		$Computer = $Name.Trim()
 		Write-Verbose "$(Get-Date): Testing computer $($Computer)"
-
-		$TestResult = Test-NetConnection -ComputerName $Computer -Port 139 -EA 0 3>$Null 4>$Null
+		
+		$TestResult = Test-NetConnection -ComputerName $Computer -Port $TCPPort -EA 0 3>$Null 4>$Null
 
 		If(($TestResult.PingSucceeded -eq $true) -or ($TestResult.PingSucceeded -eq $False -and $TestResult.TcpTestSucceeded -eq $True))
 		{
 			If($TestResult.TcpTestSucceeded)
 			{
-				$Results = Get-WmiObject -ComputerName $Computer Win32_Service -EA 0 | 
-				Where-Object {
-					$_.ServiceType -ne "Unknown" -And 
-					$_.StartName -NotLike ".\*" -And 
-					$_.StartName -NotLike "LocalSystem" -And 
-					$_.StartName -NotLike "LocalService*" -And 
-					$_.StartName -NotLike "NT AUTHORITY*" -And 
-					$_.StartName -NotLike "NT SERVICE*"} | 
-				Select-Object SystemName, Name, DisplayName, StartName
-		
-				If($? -and $Null -ne $Results)
+				If($Env:ComputerName -eq $Computer)
 				{
-					Write-Verbose "$(Get-Date): `tFound a match"
-					$Script:AllMatches += $Results
+					#process the local computer. Can't use invoke-command on self
+					$Results = Get-WmiObject -ComputerName $Computer Win32_Service -EA 0 | 
+					Where-Object {
+						$_.ServiceType -ne "Unknown" -And 
+						$_.StartName -NotLike ".\*" -And 
+						$_.StartName -NotLike "LocalSystem" -And 
+						$_.StartName -NotLike "LocalService*" -And 
+						$_.StartName -NotLike "NT AUTHORITY*" -And 
+						$_.StartName -NotLike "NT SERVICE*"} | 
+					Select-Object SystemName, Name, DisplayName, StartName
+			
+					If($? -and $Null -ne $Results)
+					{
+						Write-Verbose "$(Get-Date): `tFound a match"
+						ForEach($Result in $Results)
+						{
+							$obj1 = [PSCustomObject] @{
+								SystemName  = $Result.SystemName
+								ServiceName = $Result.Name
+								DisplayName = $Result.DisplayName
+								StartName   = $Result.StartName
+							}
+							$null = $Script:AllMatches.Add($obj1)
+						}
+					}
+					Else
+					{
+						Write-Verbose "$(Get-Date): `tNo services using domain credentials were found on computer $($Computer)"
+						$obj1 = [PSCustomObject] @{
+							SystemName  = $Computer
+							ServiceName = "N/A"
+							DisplayName = "No services using domain credentials were found"
+							StartName   = "N/A"
+						}
+						$null = $Script:AllMatches.Add($obj1)
+					}
 				}
 				Else
 				{
-					Write-Verbose "$(Get-Date): `tNo services using domain credentials were found on computer $($Computer)"
-					$Script:AllMatches += "No services using domain credentials were found on computer $($Computer)"
+					If( $UseDcom )
+					{
+						$Results = Invoke-Command -ComputerName $Computer -ScriptBlock {
+							Get-WmiObject Win32_Service -EA 0 | 
+								Where-Object {
+									$_.ServiceType -ne "Unknown" -And 
+									$_.StartName -NotLike ".\*" -And 
+									$_.StartName -NotLike "LocalSystem" -And 
+									$_.StartName -NotLike "LocalService*" -And 
+									$_.StartName -NotLike "NT AUTHORITY*" -And 
+									$_.StartName -NotLike "NT SERVICE*"} | 
+								Select-Object SystemName, Name, DisplayName, StartName
+						}
+					}
+					Else
+					{
+						$Results = Get-WmiObject Win32_Service -ComputerName $Computer -EA 0 | 
+							Where-Object {
+								$_.ServiceType -ne "Unknown" -And 
+								$_.StartName -NotLike ".\*" -And 
+								$_.StartName -NotLike "LocalSystem" -And 
+								$_.StartName -NotLike "LocalService*" -And 
+								$_.StartName -NotLike "NT AUTHORITY*" -And 
+								$_.StartName -NotLike "NT SERVICE*"} | 
+							Select-Object SystemName, Name, DisplayName, StartName
+					}
+			
+					If($? -and $Null -ne $Results)
+					{
+						Write-Verbose "$(Get-Date): `tFound a match"
+						ForEach($Result in $Results)
+						{
+							$obj1 = [PSCustomObject] @{
+								SystemName  = $Result.SystemName
+								ServiceName = $Result.Name
+								DisplayName = $Result.DisplayName
+								StartName   = $Result.StartName
+							}
+							$null = $Script:AllMatches.Add($obj1)
+						}
+					}
+					Else
+					{
+						Write-Verbose "$(Get-Date): `tNo services using domain credentials were found on computer $($Computer)"
+						$obj1 = [PSCustomObject] @{
+							SystemName  = $Computer
+							ServiceName = "N/A"
+							DisplayName = "No services using domain credentials were found"
+							StartName   = "N/A"
+						}
+						$null = $Script:AllMatches.Add($obj1)
+					}
 				}
 			}
 			Else
 			{
-				Write-Verbose "$(Get-Date): `tComputer $($Computer) is online but the test for TCP Port 139 (File and Print Sharing) failed"
-				Out-File -FilePath $Filename2 -Append `
-					-InputObject "Computer $($Computer) is online but the test for TCP Port 139 (File and Print Sharing) failed" 4>$Null
+				Write-Verbose "$(Get-Date): `tComputer $($Computer) is online but the test for TCP Port $TCPPort failed"
+				Out-File -FilePath $Script:filename3 -Append `
+					-InputObject "Computer $($Computer) is online but the test for TCP Port $TCPPort failed" 4>$Null
 			}
 		}
 		Else
@@ -631,35 +733,42 @@ $Script:Title is attached.
 			If($TestResult.PingSucceeded -eq $False -and $Null -eq $TestResult.RemoteAddress)
 			{
 				Write-Verbose "$(Get-Date): `tComputer $($Computer) was not found in DNS $(Get-Date)"
-				Out-File -FilePath $Filename2 -Append `
+				Out-File -FilePath $Script:filename3 -Append `
 					-InputObject "Computer $($Computer) was not found in DNS $(Get-Date)" 4>$Null
 			}
 			Else
 			{
 				Write-Verbose "$(Get-Date): `tComputer $($Computer) is not online or is online but is not a Windows computer"
-				Out-File -FilePath $Filename2 -Append `
+				Out-File -FilePath $Script:filename3 -Append `
 					-InputObject "Computer $($Computer) was not online $(Get-Date) or is online but is not a Windows computer" 4>$Null
 			}
 			
 		}
 	}
 
-    $Script:AllMatches = @()
+    $Script:AllMatches = New-Object System.Collections.ArrayList
 }
 
 Process
 {
-    If($Name -is [array])
-    {
-        ForEach($Computer in $Name)
-        {
+	If($Name -is [array])
+	{
+		ForEach($Computer in $Name)
+		{
+			#$Computer value is @{Name=ADComputerName}
+			$StartPos = $Computer.IndexOf("=")
+			If( $StartPos -ge 0 )
+			{
+				$EndPos = $Computer.IndexOf("}")
+				$ComputerName = $Computer.Substring($StartPos+1,$EndPos-$StartPos-1)
+				ProcessComputer $ComputerName
+			}
+			Else
+			{
 			ProcessComputer $Computer
-        }
-    }
-    Else
-    {
-		ProcessComputer $Name
-    }
+			}
+		}
+	}
 }
 
 End
@@ -667,6 +776,7 @@ End
     $Script:AllMatches = $Script:AllMatches | Sort-Object SystemName,Name
 
     $Script:AllMatches | Out-String -width 200 | Out-File -FilePath $Script:FileName1 -EA 0 4>$Null
+	$Script:AllMatches | Export-CSV -Force -Encoding ASCII -NoTypeInformation -Path $Script:FileName2
 
 	$emailAttachment = @()
     If(Test-Path "$($Script:FileName1)")
@@ -685,6 +795,15 @@ End
 		If(![System.String]::IsNullOrEmpty( $SmtpServer ))
 		{
 			$emailAttachment += $Script:FileName2
+		}
+	}
+    If(Test-Path "$($Script:filename3)")
+    {
+	    Write-Verbose "$(Get-Date): $($Script:filename3) is ready for use"
+		#email output file if requested
+		If(![System.String]::IsNullOrEmpty( $SmtpServer ))
+		{
+			$emailAttachment += $Script:filename3
 		}
     }
 
@@ -721,22 +840,24 @@ End
 
 	If($ScriptInfo)
 	{
-		$SIFile = "$Script:pwdpath\ComputersWithDomainServiceAccountsScriptInfo_$(Get-Date -f yyyy-MM-dd_HHmm).txt"
+		$SIFile = "$Script:pwdpath\ComputersWithDomainServiceAccountsScriptInfo_ForDomain_$($Domain)_$(Get-Date -f yyyy-MM-dd_HHmm).txt"
 		Out-File -FilePath $SIFile -InputObject "" 4>$Null
 		Out-File -FilePath $SIFile -Append -InputObject "Dev                : $($Dev)" 4>$Null
 		If($Dev)
 		{
 			Out-File -FilePath $SIFile -Append -InputObject "DevErrorFile       : $($Script:DevErrorFile)" 4>$Null
 		}
-		Out-File -FilePath $SIFile -Append -InputObject "Filename1          : $($Script:FileName1)" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Filename2          : $($Script:FileName2)" 4>$Null
+		Out-File -FilePath $SIFile -Append -InputObject "Filename1          : $($Script:filename1)" 4>$Null
+		Out-File -FilePath $SIFile -Append -InputObject "Filename2          : $($Script:filename2)" 4>$Null
+		Out-File -FilePath $SIFile -Append -InputObject "Filename3          : $($Script:filename3)" 4>$Null
 		Out-File -FilePath $SIFile -Append -InputObject "Folder             : $($Folder)" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "From               : $($From)" 4>$Null
 		Out-File -FilePath $SIFile -Append -InputObject "Log                : $($Log)" 4>$Null
 		Out-File -FilePath $SIFile -Append -InputObject "Script Info        : $($ScriptInfo)" 4>$Null
+		Out-File -FilePath $SIFile -Append -InputObject "TCP Port           : $($TCPPort)" 4>$Null
+		Out-File -FilePath $SIFile -Append -InputObject "Title              : $($Script:Title)" 4>$Null
 		Out-File -FilePath $SIFile -Append -InputObject "Smtp Port          : $($SmtpPort)" 4>$Null
 		Out-File -FilePath $SIFile -Append -InputObject "Smtp Server        : $($SmtpServer)" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Title              : $($Script:Title)" 4>$Null
+		Out-File -FilePath $SIFile -Append -InputObject "From               : $($From)" 4>$Null
 		Out-File -FilePath $SIFile -Append -InputObject "To                 : $($To)" 4>$Null
 		Out-File -FilePath $SIFile -Append -InputObject "Use SSL            : $($UseSSL)" 4>$Null
 		Out-File -FilePath $SIFile -Append -InputObject "" 4>$Null
