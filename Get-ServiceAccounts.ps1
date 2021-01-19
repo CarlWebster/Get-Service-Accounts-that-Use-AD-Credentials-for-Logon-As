@@ -130,8 +130,8 @@
 	The script uses the email server mailrelay.domain.tld, sending from 
 	anonymous@domain.tld, sending to ITGroup@domain.tld.
 
-	To send unauthenticated email using an email relay server requires the From email account 
-	use the name Anonymous.
+	To send an unauthenticated email using an email relay server requires the From email 
+	account use the name Anonymous.
 
 	The script uses the default SMTP port 25 and does not use SSL.
 	
@@ -139,8 +139,8 @@
 	https://support.google.com/a/answer/2956491?hl=en
 	https://support.google.com/a/answer/176600?hl=en
 
-	To send email using a Gmail or g-suite account, you may have to turn ON
-	the "Less secure app access" option on your account.
+	To send email using a Gmail or g-suite account, you may have to turn ON the "Less secure 
+	app access" option on your account.
 	***GMAIL/G SUITE SMTP RELAY***
 
 	The script generates an anonymous, secure password for the anonymous@domain.tld 
@@ -177,8 +177,8 @@
 	-SmtpPort 587 -UseSSL -From Webster@CarlWebster.com -To ITGroup@CarlWebster.com	
 
 	*** NOTE ***
-	To send email using a Gmail or g-suite account, you may have to turn ON
-	the "Less secure app access" option on your account.
+	To send an email using a Gmail or g-suite account, you may have to turn ON the "Less 
+	secure app access" option on your account.
 	*** NOTE ***
 	
 	The script uses the email server smtp.gmail.com on port 587 using SSL, 
