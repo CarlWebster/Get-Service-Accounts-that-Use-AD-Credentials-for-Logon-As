@@ -65,6 +65,11 @@
 .EXAMPLE
 	$Names = Get-ADComputer -Filter * | Select Name | Sort Name
 	.\Get-ServiceAccounts.ps1 -Name $Names
+	
+.EXAMPLE
+	"MgmtComputer" | .\Get-ServiceAccounts.ps1
+	
+	Finds service accounts on the one specified computer.
 .EXAMPLE
 	Get-ADComputer -Filter * | Select Name | Sort Name | .\Get-ServiceAccounts.ps1 
 	-UseDcom
@@ -114,7 +119,7 @@
 	Get-ADComputer -Filter * | .\Get-ServiceAccounts.ps1 -SmtpServer 
 	mail.domain.tld -From XDAdmin@domain.tld -To ITGroup@domain.tld	
 
-	The script uses the email server mail.domain.tld, sending from XDAdmin@domain.tld, 
+	The script uses the email server mail.domain.tld, sending from XDAdmin@domain.tld and 
 	sending to ITGroup@domain.tld.
 
 	The script uses the default SMTP port 25 and does not use SSL.
@@ -128,7 +133,7 @@
 	***SENDING UNAUTHENTICATED EMAIL***
 
 	The script uses the email server mailrelay.domain.tld, sending from 
-	anonymous@domain.tld, sending to ITGroup@domain.tld.
+	anonymous@domain.tld and sending to ITGroup@domain.tld.
 
 	To send an unauthenticated email using an email relay server requires the From email 
 	account use the name Anonymous.
@@ -139,8 +144,8 @@
 	https://support.google.com/a/answer/2956491?hl=en
 	https://support.google.com/a/answer/176600?hl=en
 
-	To send email using a Gmail or g-suite account, you may have to turn ON the "Less secure 
-	app access" option on your account.
+	To send an email using a Gmail or g-suite account, you may have to turn ON the "Less 
+	secure app access" option on your account.
 	***GMAIL/G SUITE SMTP RELAY***
 
 	The script generates an anonymous, secure password for the anonymous@domain.tld 
@@ -158,8 +163,8 @@
 	
 	***OFFICE 365 Example***
 
-	The script uses the email server labaddomain-com.mail.protection.outlook.com, 
-	sending from SomeEmailAddress@labaddomain.com, sending to ITGroupDL@labaddomain.com.
+	The script uses the email server labaddomain-com.mail.protection.outlook.com, sending 
+	from SomeEmailAddress@labaddomain.com and sending to ITGroupDL@labaddomain.com.
 
 	The script uses the default SMTP port 25 and SSL.
 .EXAMPLE
@@ -167,8 +172,8 @@
 	smtp.office365.com -SmtpPort 587 -UseSSL -From Webster@CarlWebster.com -To 
 	ITGroup@CarlWebster.com	
 
-	The script uses the email server smtp.office365.com on port 587 using SSL, 
-	sending from webster@carlwebster.com, sending to ITGroup@carlwebster.com.
+	The script uses the email server smtp.office365.com on port 587 using SSL, sending from 
+	webster@carlwebster.com and sending to ITGroup@carlwebster.com.
 
 	If the current user's credentials are not valid to send an email, the script prompts 
 	the user to enter valid credentials.
@@ -181,8 +186,8 @@
 	secure app access" option on your account.
 	*** NOTE ***
 	
-	The script uses the email server smtp.gmail.com on port 587 using SSL, 
-	sending from webster@gmail.com, sending to ITGroup@carlwebster.com.
+	The script uses the email server smtp.gmail.com on port 587 using SSL, sending from 
+	webster@gmail.com and sending to ITGroup@carlwebster.com.
 
 	If the current user's credentials are not valid to send an email, the script prompts 
 	the user to enter valid credentials.
@@ -751,22 +756,19 @@ $Script:Title is attached.
 
 Process
 {
-	If($Name -is [array])
+	ForEach($Computer in $Name)
 	{
-		ForEach($Computer in $Name)
+		#$Computer value is @{Name=ADComputerName}
+		$StartPos = $Computer.IndexOf("=")
+		If( $StartPos -ge 0 )
 		{
-			#$Computer value is @{Name=ADComputerName}
-			$StartPos = $Computer.IndexOf("=")
-			If( $StartPos -ge 0 )
-			{
-				$EndPos = $Computer.IndexOf("}")
-				$ComputerName = $Computer.Substring($StartPos+1,$EndPos-$StartPos-1)
-				ProcessComputer $ComputerName
-			}
-			Else
-			{
+			$EndPos = $Computer.IndexOf("}")
+			$ComputerName = $Computer.Substring($StartPos+1,$EndPos-$StartPos-1)
+			ProcessComputer $ComputerName
+		}
+		Else
+		{
 			ProcessComputer $Computer
-			}
 		}
 	}
 }
