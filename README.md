@@ -1,12 +1,10 @@
 # GetServiceAccounts
 Get Windows Service Accounts that use domain credentials
-	Find Services using a domain account on specified computers in Microsoft Active 
-	Directory.
+	Find Services using a domain account on specified computers in Microsoft Active Directory.
 	
 	Process each computer looking for Services using a domain account for Log On As.
 	
-	Builds a list of computer names, Service names, service display names, and service start 
-	names.
+	Builds a list of computer names, Service names, service display names, and service start names.
 	
 	Creates two text files and one CSV file, by default, in the folder where the script is run.
 	
